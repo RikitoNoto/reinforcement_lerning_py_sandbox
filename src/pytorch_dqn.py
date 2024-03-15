@@ -79,7 +79,11 @@ n_actions = env.action_space.n
 state, info = env.reset()
 n_observations = len(state)
 
+# DQNを二つ利用するDDQN
+# 方策決定のためのネットワーク
 policy_net = DQN(n_observations, n_actions).to(device)
+# TD誤差を更新するためのターゲットネットワーク(Q-)
+# 緩やかにpolicy_netに同期する。(論文は何回かのステップごとに更新)
 target_net = DQN(n_observations, n_actions).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 
@@ -93,17 +97,23 @@ steps_done = 0
 def select_action(state):
     global steps_done
     sample = random.random()
+
+    # εの算出
     eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(
         -1.0 * steps_done / EPS_DECAY
     )
     steps_done += 1
+    # ランダムに出力した値がεより大きい場合
     if sample > eps_threshold:
+        # Qネットワークから行動を選択
         with torch.no_grad():
             # t.max(1) will return the largest column value of each row.
             # second column on max result is index of where max element was
             # found, so we pick action with the larger expected reward.
             return policy_net(state).max(1).indices.view(1, 1)
+    # εのほうが大きい場合
     else:
+        # ランダムな行動(ε)
         return torch.tensor(
             [[env.action_space.sample()]], device=device, dtype=torch.long
         )
@@ -199,8 +209,12 @@ for i_episode in range(num_episodes):
     state, info = env.reset()
     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
     for t in count():
+        # 行動を選択(ε-greedy法)
         action = select_action(state)
+        # truncatedは行動が長すぎて打ち切られた場合にtrue
+        # terminatedはエピソードが完了した場合にtrue
         observation, reward, terminated, truncated, _ = env.step(action.item())
+
         reward = torch.tensor([reward], device=device)
         done = terminated or truncated
 
@@ -211,7 +225,7 @@ for i_episode in range(num_episodes):
                 observation, dtype=torch.float32, device=device
             ).unsqueeze(0)
 
-        # Store the transition in memory
+        # 経験再生バッファにpush
         memory.push(state, action, next_state, reward)
 
         # Move to the next state
@@ -222,6 +236,7 @@ for i_episode in range(num_episodes):
 
         # Soft update of the target network's weights
         # θ′ ← τ θ + (1 −τ )θ′
+        # 徐々にtarget_netをpolicy_netに同期させていく
         target_net_state_dict = target_net.state_dict()
         policy_net_state_dict = policy_net.state_dict()
         for key in policy_net_state_dict:
