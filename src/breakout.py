@@ -49,7 +49,8 @@ def learn():
     model = PPO("CnnPolicy", train_env, verbose=0)
 
     # モデルの読み込み
-    model = PPO.load("saves/breakout_model", env=train_env, verbose=0)
+    if os.path.exists("saves/breakout_model.zip"):
+        model = PPO.load("saves/breakout_model", env=train_env, verbose=0)
     model_save_callback = ModelSaveCallback("logs", "saves", save_epoch=10)
     # モデルの学習
     model.learn(
