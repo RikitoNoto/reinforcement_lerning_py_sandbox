@@ -1,6 +1,7 @@
 import gymnasium as gym
 import time
 import os
+import sys
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
 
@@ -11,7 +12,7 @@ from callbacks import ModelSaveCallback
 
 # 定数
 ENV_ID = "BreakoutNoFrameskip-v4"  # 環境ID
-NUM_ENV = 2  # 環境数
+NUM_ENV = 8  # 環境数
 
 
 # 環境を生成する関数
@@ -38,7 +39,7 @@ def make_env(env_id, rank, render_mode="human", seed=0):
 
 
 # メイン関数の定義
-def main():
+def learn():
     # 学習環境の生成
     train_env = DummyVecEnv(
         [make_env(ENV_ID, i, render_mode=None) for i in range(NUM_ENV - 1)]
@@ -55,9 +56,16 @@ def main():
         total_timesteps=1280000, callback=model_save_callback, progress_bar=True
     )
 
+
+def play():
     # テスト環境の生成
     test_env = DummyVecEnv([make_env(ENV_ID, 9)])
 
+    # モデルの生成
+    model = PPO("CnnPolicy", test_env, verbose=0)
+
+    # モデルの読み込み
+    model = PPO.load("saves/breakout_model", env=test_env, verbose=0)
     # モデルのテスト
     state = test_env.reset()
     total_reward = 0
@@ -82,4 +90,8 @@ def main():
 
 # メインの実行
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) >= 2 and sys.argv[1] == "play":
+
+        play()
+    else:
+        learn()
