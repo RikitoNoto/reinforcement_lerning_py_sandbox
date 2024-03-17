@@ -7,7 +7,14 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 
 # from stable_baselines3.common.utils import set_global_seeds
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.atari_wrappers import *
+from stable_baselines3.common.atari_wrappers import (
+    NoopResetEnv,
+    MaxAndSkipEnv,
+    FireResetEnv,
+    WarpFrame,
+    ClipRewardEnv,
+    EpisodicLifeEnv,
+)
 from callbacks import ModelSaveCallback
 
 # 定数
