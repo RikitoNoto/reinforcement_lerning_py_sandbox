@@ -19,11 +19,11 @@ from callbacks import ModelSaveCallback
 
 # 定数
 ENV_ID = "BreakoutNoFrameskip-v4"  # 環境ID
-NUM_ENV = 8  # 環境数
+NUM_ENV = 64  # 環境数
 
 
 # 環境を生成する関数
-def make_env(env_id, rank, render_mode="human", seed=0):
+def make_env(env_id, rank, render_mode="human", seed=0, episodic_life=True):
     def _init():
         env = gym.make(env_id, render_mode=render_mode)
         env = NoopResetEnv(
@@ -34,7 +34,9 @@ def make_env(env_id, rank, render_mode="human", seed=0):
         env = WarpFrame(env)  # 画面イメージを84x84のグレースケールに変換
         # env = ScaledFloatFrame(env)  # 状態の正規化
         env = ClipRewardEnv(env)  # 報酬の「-1」「0」「1」クリッピング
-        env = EpisodicLifeEnv(env)  # ライフ1減でエピソード完了
+        if episodic_life:
+            env = EpisodicLifeEnv(env)  # ライフ1減でエピソード完了
+
         if rank == 0:
             os.makedirs("logs", exist_ok=True)
             env = Monitor(env, "logs/", allow_early_resets=True)
@@ -58,16 +60,21 @@ def learn():
     # モデルの読み込み
     if os.path.exists("saves/breakout_model.zip"):
         model = PPO.load("saves/breakout_model", env=train_env, verbose=0)
-    model_save_callback = ModelSaveCallback("logs", "saves", save_epoch=10)
+    model_save_callback = ModelSaveCallback(
+        "logs", "saves", save_epoch=10, overwrite=False
+    )
     # モデルの学習
+    # model.learn(
+    #     total_timesteps=1280000, callback=model_save_callback, progress_bar=True
+    # )
     model.learn(
-        total_timesteps=1280000, callback=model_save_callback, progress_bar=True
+        total_timesteps=60000000, callback=model_save_callback, progress_bar=True
     )
 
 
 def play():
     # テスト環境の生成
-    test_env = DummyVecEnv([make_env(ENV_ID, 9)])
+    test_env = DummyVecEnv([make_env(ENV_ID, 9, episodic_life=False)])
 
     # モデルの生成
     model = PPO("CnnPolicy", test_env, verbose=0)
