@@ -61,7 +61,7 @@ def learn():
     if os.path.exists("saves/breakout_model.zip"):
         model = PPO.load("saves/breakout_model", env=train_env, verbose=0)
     model_save_callback = ModelSaveCallback(
-        "logs", "saves", save_epoch=10, overwrite=False
+        "logs", "saves", save_epoch=1000, overwrite=False
     )
     # モデルの学習
     # model.learn(
@@ -77,7 +77,7 @@ def play():
     test_env = DummyVecEnv([make_env(ENV_ID, 9, episodic_life=False)])
 
     # モデルの生成
-    model = PPO("CnnPolicy", test_env, verbose=0)
+    model = PPO("CnnPolicy", test_env, verbose=0, clip_range=0.1)
 
     # モデルの読み込み
     model = PPO.load("saves/breakout_model", env=test_env, verbose=0)
