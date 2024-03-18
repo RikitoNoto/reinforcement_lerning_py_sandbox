@@ -19,7 +19,6 @@ from callbacks import ModelSaveCallback
 
 # 定数
 ENV_ID = "BreakoutNoFrameskip-v4"  # 環境ID
-NUM_ENV = 64  # 環境数
 
 
 # 環境を生成する関数
@@ -48,10 +47,10 @@ def make_env(env_id, rank, render_mode="human", seed=0, episodic_life=True):
 
 
 # メイン関数の定義
-def learn():
+def learn(step: int, env_count: int):
     # 学習環境の生成
     train_env = DummyVecEnv(
-        [make_env(ENV_ID, i, render_mode=None) for i in range(NUM_ENV - 1)]
+        [make_env(ENV_ID, i, render_mode=None) for i in range(env_count - 1)]
     )
 
     # モデルの生成
@@ -64,12 +63,7 @@ def learn():
         "logs", "saves", save_epoch=1000, overwrite=False
     )
     # モデルの学習
-    # model.learn(
-    #     total_timesteps=1280000, callback=model_save_callback, progress_bar=True
-    # )
-    model.learn(
-        total_timesteps=60000000, callback=model_save_callback, progress_bar=True
-    )
+    model.learn(total_timesteps=step, callback=model_save_callback, progress_bar=True)
 
 
 def play():
@@ -109,4 +103,11 @@ if __name__ == "__main__":
 
         play()
     else:
-        learn()
+        step = 60000000
+        env_count = 64
+        if len(sys.argv) >= 2:
+            step = int(sys.argv[1])
+        if len(sys.argv) >= 3:
+            env_count = int(sys.argv[2])
+
+        learn(step, env_count)
