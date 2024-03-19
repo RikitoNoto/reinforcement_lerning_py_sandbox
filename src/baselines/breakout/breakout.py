@@ -60,7 +60,11 @@ def learn(step: int, env_count: int):
     if os.path.exists("saves/breakout_model.zip"):
         model = PPO.load("saves/breakout_model", env=train_env, verbose=0)
     model_save_callback = ModelSaveCallback(
-        "logs", "saves", save_epoch=1000, overwrite=False
+        "logs",
+        "saves",
+        save_epoch=100,
+        overwrite=False,
+        save_only_best=False,
     )
     # モデルの学習
     model.learn(total_timesteps=step, callback=model_save_callback, progress_bar=True)
@@ -104,7 +108,7 @@ if __name__ == "__main__":
         play()
     else:
         step = 60000000
-        env_count = 64
+        env_count = 32
         if len(sys.argv) >= 2:
             step = int(sys.argv[1])
         if len(sys.argv) >= 3:

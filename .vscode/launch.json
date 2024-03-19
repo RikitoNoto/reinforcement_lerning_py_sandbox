@@ -15,15 +15,16 @@
       "name": "learn breakout",
       "type": "debugpy",
       "request": "launch",
-      "program": "src/baselines/breakout.py",
+      "program": "src/baselines/breakout/breakout.py",
       "console": "integratedTerminal",
+      "justMyCode": false,
       "args": []
     },
     {
       "name": "play breakout",
       "type": "debugpy",
       "request": "launch",
-      "program": "src/baselines/breakout.py",
+      "program": "src/baselines/breakout/breakout.py",
       "console": "integratedTerminal",
       "args": [
         "play",
