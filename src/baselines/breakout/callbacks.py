@@ -10,13 +10,14 @@ class ModelSaveCallback(BaseCallback):
         self,
         log_dir_path: str,
         save_dir_path: str,
+        start_step: int = 0,
         verbose: int = 0,
         save_epoch: int = 10,
         save_only_best=True,
         overwrite=True,
     ):
         super().__init__(verbose)
-
+        self.__start_step = start_step
         self.__best_mean_reward = -np.inf  # 最高の報酬
         self.__log_dir_path = log_dir_path  # ログファイルのディレクトリ
         self.__save_dir_path = save_dir_path  # 保存先のディレクトリ
@@ -52,8 +53,9 @@ class ModelSaveCallback(BaseCallback):
 
         :return: If the callback returns False, training is aborted early.
         """
+        step = self.num_timesteps + self.__start_step
 
-        if self.num_timesteps % self.__save_epoch > 0:
+        if step % self.__save_epoch > 0:
             return True
 
         _, y = ts2xy(load_results(self.__log_dir_path), "timesteps")
@@ -73,9 +75,7 @@ class ModelSaveCallback(BaseCallback):
             )
             if not self.__overwrite:
                 self.locals["self"].save(
-                    os.path.join(
-                        self.__save_dir_path, f"breakout_model_{self.num_timesteps}"
-                    )
+                    os.path.join(self.__save_dir_path, f"breakout_model_{step}")
                 )
 
         return True

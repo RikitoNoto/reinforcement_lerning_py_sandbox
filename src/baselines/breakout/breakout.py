@@ -2,6 +2,7 @@ import gymnasium as gym
 import time
 import os
 import sys
+import re
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
 
@@ -47,7 +48,7 @@ def make_env(env_id, rank, render_mode="human", seed=0, episodic_life=True):
 
 
 # メイン関数の定義
-def learn(step: int, env_count: int):
+def learn(start_step: int, step: int, env_count: int):
     # 学習環境の生成
     train_env = DummyVecEnv(
         [make_env(ENV_ID, i, render_mode=None) for i in range(env_count - 1)]
@@ -62,12 +63,17 @@ def learn(step: int, env_count: int):
     model_save_callback = ModelSaveCallback(
         "logs",
         "saves",
+        start_step=start_step,
         save_epoch=100,
         overwrite=False,
         save_only_best=False,
     )
     # モデルの学習
-    model.learn(total_timesteps=step, callback=model_save_callback, progress_bar=True)
+    model.learn(
+        total_timesteps=step,
+        callback=model_save_callback,
+        progress_bar=True,
+    )
 
 
 def play():
@@ -101,6 +107,17 @@ def play():
             total_reward = 0
 
 
+def get_last_step(save_dir: str) -> int:
+    latest_step = 0
+    for file in os.listdir(save_dir):
+        step_match = re.match(r"breakout_model_(\d+).zip", file)
+        if step_match:
+            step = int(step_match.group(1))
+            if latest_step < step:
+                latest_step = step
+    return latest_step
+
+
 # メインの実行
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "play":
@@ -108,10 +125,12 @@ if __name__ == "__main__":
         play()
     else:
         step = 60000000
-        env_count = 32
+        env_count = 128
+        start_step = get_last_step("saves")
+        step -= start_step
         if len(sys.argv) >= 2:
             step = int(sys.argv[1])
         if len(sys.argv) >= 3:
             env_count = int(sys.argv[2])
 
-        learn(step, env_count)
+        learn(start_step, step, env_count)
