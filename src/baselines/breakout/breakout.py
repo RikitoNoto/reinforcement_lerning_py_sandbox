@@ -64,7 +64,7 @@ def learn(start_step: int, step: int, env_count: int):
         "logs",
         "saves",
         start_step=start_step,
-        save_epoch=100,
+        save_epoch=100_000,
         overwrite=False,
         save_only_best=False,
     )
@@ -121,16 +121,26 @@ def get_last_step(save_dir: str) -> int:
 # メインの実行
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "play":
-
         play()
     else:
-        step = 60000000
-        env_count = 128
-        start_step = get_last_step("saves")
-        step -= start_step
+
+        def fetch_restart_step(path: str) -> tuple[int, int]:
+            step = 60000000
+            start_step = get_last_step("saves")
+            return start_step, step - start_step
+
+        env_count = 16
+        start_step, step = fetch_restart_step("save")
+
         if len(sys.argv) >= 2:
             step = int(sys.argv[1])
         if len(sys.argv) >= 3:
             env_count = int(sys.argv[2])
-
-        learn(start_step, step, env_count)
+        while step:
+            try:
+                learn(start_step, step, env_count)
+            except:
+                # GPUでエラーが出た場合は、再度ステップを更新して再開
+                start_step, step = fetch_restart_step("save")
+                # 念のため、1分待つ
+                time.sleep(60)
