@@ -1,4 +1,5 @@
 import gymnasium as gym
+import numpy as np
 import time
 import os
 import sys
@@ -76,35 +77,48 @@ def learn(start_step: int, step: int, env_count: int):
     )
 
 
-def play():
+def play(
+    save_file_path: str = "saves/breakout_model",
+    count: int = 99999999999,
+    render_mode="human",
+) -> float:
     # テスト環境の生成
-    test_env = DummyVecEnv([make_env(ENV_ID, 9, episodic_life=False)])
+    test_env = DummyVecEnv(
+        [make_env(ENV_ID, 9, render_mode=render_mode, episodic_life=False)]
+    )
 
     # モデルの生成
     model = PPO("CnnPolicy", test_env, verbose=0, clip_range=0.1)
 
     # モデルの読み込み
-    model = PPO.load("saves/breakout_model", env=test_env, verbose=0)
+    model = PPO.load(save_file_path, env=test_env, verbose=0)
     # モデルのテスト
     state = test_env.reset()
+    rewards = []
     total_reward = 0
-    while True:
-        # 環境の描画
-        test_env.render()
-        time.sleep(1 / 60)
+    for i in range(count):
+        total_reward = 0
+        while True:
+            # 環境の描画
+            test_env.render()
+            if render_mode == "human":
+                time.sleep(1 / 60)
 
-        # モデルの推論
-        action, _ = model.predict(state)
+            # モデルの推論
+            action, _ = model.predict(state)
 
-        # 1ステップ実行
-        state, reward, done, info = test_env.step(action)
+            # 1ステップ実行
+            state, reward, done, info = test_env.step(action)
 
-        # エピソードの完了
-        total_reward += reward[0]
-        if done:
-            print("reward:", total_reward)
-            state = test_env.reset()
-            total_reward = 0
+            # エピソードの完了
+            total_reward += reward[0]
+            if done:
+                print("reward:", total_reward)
+                state = test_env.reset()
+                rewards.append(total_reward)
+                break
+
+    return np.mean(rewards)
 
 
 def get_last_step(save_dir: str) -> int:
