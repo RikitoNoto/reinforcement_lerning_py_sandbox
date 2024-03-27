@@ -62,19 +62,20 @@ if __name__ == "__main__":
 
     pool = multiprocessing.Pool(8)  # デフォルトで CPU のコア数を利用
 
-    # 100件ごとに保存
+    # 10件ごとに保存
     i = 0
+    epoch = 10
     while i < len(file_list):
-        files = file_list[i : i + 100]
+        files = file_list[i : i + epoch]
 
         rewards = pool.map(process_task, [file for _, file in files])
-        pool.join()
         pool.close()
+        pool.join()
 
         with open(progress_file, mode="a+") as file:
             writer = csv.writer(file)
             writer.writerows(rewards)
-        i += 100
+        i += epoch
     rewards = read_played_results(progress_file)
     figure = pyplot.figure()
     xax = figure.add_axes([step for step, _ in rewards])
